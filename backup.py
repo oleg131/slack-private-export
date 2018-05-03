@@ -56,14 +56,14 @@ def save_msgs_and_files(p, messages):
     with open(str(pm), 'w') as f:
         json.dump(messages, f)
 
-    # for m in messages:
-    #     if 'file' in m:
-    #         url = m['file']['url_private']
-    #         pf = p / '{}-{}'.format(m['file']['id'], m['file']['name'])
+    for m in messages:
+        if 'file' in m:
+            url = m['file']['url_private']
+            pf = p / '{}-{}'.format(m['file']['id'], m['file']['name'])
 
-    #         print('Downloading {}'.format(url))
+            print('Downloading {}'.format(url))
 
-    #         os.system('wget --header="Authorization: Bearer {}" "{}" -O "{}"'.format(token, url, pf))
+            os.system('wget --header="Authorization: Bearer {}" "{}" -O "{}"'.format(token, url, pf))
 
 
 def save_html(p, messages):
