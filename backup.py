@@ -33,6 +33,8 @@ ims = sc.api_call('im.list')
 im_names = {i['id']: user_names[i['user']] for i in ims['ims']}
 
 def get_msgs_by_id(call, id_):
+    """Get all messages in channel."""
+
     msgs = []
     h = sc.api_call(call, channel=id_)
     msgs.extend(h['messages'])
@@ -50,6 +52,8 @@ def get_msgs_by_id(call, id_):
 
 
 def save_msgs_and_files(p, messages):
+    """Save messages as JSON and download all files mentioned."""
+
     p.mkdir(exist_ok=True, parents=True)
 
     pm = p / 'messages.json'
@@ -67,6 +71,8 @@ def save_msgs_and_files(p, messages):
 
 
 def save_html(p, messages):
+    """Save messages as HTML."""
+
     if not len(messages):
         return
 
@@ -99,9 +105,7 @@ def save_html(p, messages):
     with open(str(pm), 'w', encoding='utf') as f:
         f.write(html)
 
-
-# Download messages in all groups (private channels)
-# Use pagination where necessary
+# Private channels
 for g in groups['groups']:
 
     msgs = get_msgs_by_id('groups.history', g['id'])
@@ -115,6 +119,7 @@ for g in groups['groups']:
     save_msgs_and_files(p, msgs)
     save_html(p, msgs)
 
+# Direct messages
 for im in ims['ims']:
 
     name = im_names[im['id']]
