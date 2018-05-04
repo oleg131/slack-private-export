@@ -4,4 +4,4 @@ This script creates a local dump of private slack channels.
 2. Use Python 3
 3. Get Python modules from `requirements.txt`
 4. Get `wget` for command line
-5. Run `python backup.up --token TOKEN`
+5. Run `python backup.py --token TOKEN`

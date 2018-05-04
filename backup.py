@@ -24,6 +24,8 @@ sc = SlackClient(token)
 users = sc.api_call('users.list')
 user_names = {i['id']: i['name'] for i in users['members']}
 
+channels = sc.api_call('conversations.list')
+
 # Get group id to group name mapping
 groups = sc.api_call('groups.list')
 group_names = {i['id']: i['name'] for i in groups['groups']}
@@ -31,6 +33,12 @@ group_names = {i['id']: i['name'] for i in groups['groups']}
 # Get private conversations
 ims = sc.api_call('im.list')
 im_names = {i['id']: user_names[i['user']] for i in ims['ims']}
+
+with open('users.txt', 'w') as f:
+    json.dump(users, f)
+
+with open('channels.txt', 'w') as f:
+    json.dump(channels, f)
 
 def get_msgs_by_id(call, id_):
     """Get all messages in channel."""
@@ -51,23 +59,29 @@ def get_msgs_by_id(call, id_):
     return msgs
 
 
-def save_msgs_and_files(p, messages):
+def save_messages(p, messages):
     """Save messages as JSON and download all files mentioned."""
-
-    p.mkdir(exist_ok=True, parents=True)
 
     pm = p / 'messages.json'
     with open(str(pm), 'w') as f:
         json.dump(messages, f)
 
+
+def save_files(p, messages):
+    files = []
     for m in messages:
         if 'file' in m:
             url = m['file']['url_private']
             pf = p / '{}-{}'.format(m['file']['id'], m['file']['name'])
 
-            print('Downloading {}'.format(url))
+            files.append('''{}
+            header=Authorization: Bearer {}
+            out={}'''.format(url, token, pf))
 
-            os.system('wget --header="Authorization: Bearer {}" "{}" -O "{}"'.format(token, url, pf))
+            # print('Downloading {}'.format(url))
+            # os.system('wget --header="Authorization: Bearer {}" "{}" -O "{}"'.format(token, url, pf))
+
+    return files
 
 
 def save_html(p, messages):
@@ -106,6 +120,7 @@ def save_html(p, messages):
         f.write(html)
 
 # Private channels
+files = []
 for g in groups['groups']:
 
     msgs = get_msgs_by_id('groups.history', g['id'])
@@ -115,9 +130,12 @@ for g in groups['groups']:
 
     name = group_names[g['id']]
     p = path / name
+    p.mkdir(exist_ok=True, parents=True)
 
-    save_msgs_and_files(p, msgs)
+    save_messages(p, msgs)
     save_html(p, msgs)
+    f = save_files(p, msgs)
+    files.extend(f)
 
 # Direct messages
 for im in ims['ims']:
@@ -130,6 +148,16 @@ for im in ims['ims']:
         'messages')
 
     p = path / name
+    p.mkdir(exist_ok=True, parents=True)
 
-    save_msgs_and_files(p, msgs)
+    save_messages(p, msgs)
     save_html(p, msgs)
+    f = save_files(p, msgs)
+    files.extend(f)
+
+print('Downloading all files')
+pf = Path('.') / 'files.txt'
+with open(str(pf), 'w', encoding='utf') as f:
+    for i in files:
+        f.write(i + '\n')
+os.system('aria2c -i {} -l log.txt --log-level notice'.format(str(pf)))
